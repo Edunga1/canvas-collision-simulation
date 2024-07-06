@@ -63,6 +63,11 @@ function vector(x, y) {
       }
       return vector(this.x / mag, this.y / mag)
     },
+    rotate: function(angle) {
+      const cos = Math.cos(angle)
+      const sin = Math.sin(angle)
+      return vector(this.x * cos - this.y * sin, this.x * sin + this.y * cos)
+    }
   }
 }
 
@@ -119,7 +124,13 @@ function shapeManager() {
       })
     },
     get: function() {
-      return shapes
+      return shapes.map(x => {
+        return {
+          pos: x.pos,
+          r: x.r,
+          highlighted: x === highlighted,
+        }
+      })
     },
   }
 }
@@ -127,12 +138,23 @@ function shapeManager() {
 function shapeDrawer(manager, context) {
   return {
     draw: function() {
+      context.save()
       context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+      // gradient bg
+      const gradient = context.createLinearGradient(0, 0, 0, context.canvas.height)
+      gradient.addColorStop(0, '#ccc')
+      gradient.addColorStop(1, '#99f')
+      context.fillStyle = gradient
+      context.fillRect(0, 0, context.canvas.width, context.canvas.height)
+      // shapes
+      context.fillStyle = 'rgba(0,0,0,0)'
       manager.get().forEach(shape => {
+        context.strokeStyle = shape.highlighted ? '#0f0' : '#000'
         context.beginPath()
         context.arc(shape.pos.x, shape.pos.y, shape.r, 0, Math.PI * 2)
-        context.fill()
+        context.stroke()
       })
+      context.restore()
     },
   }
 }
@@ -151,9 +173,19 @@ function main() {
     drawer.draw()
   })
 
-  manager.create(100, 100, 50)
-  manager.create(500, 500, 50)
-  manager.create(600, 600, 50)
+  // initial shapes
+  const x = window.innerWidth / 2
+  const y = window.innerHeight / 2
+  const radius = 10
+  const count = 50
+  for (let i = 0; i < count; i++) {
+    const direction = vector(1, 0).rotate(i * (Math.PI / 10))
+    manager.create(
+      x + direction.x * (i * 25),
+      y + direction.y * (i * 25),
+      radius + i,
+    )
+  }
 }
 
 main()
